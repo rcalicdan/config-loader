@@ -22,7 +22,6 @@ final class ConfigLoader
 {
     private static ?self $instance = null;
     private ?string $rootPath = null;
-    private bool $envLoaded = false;
     private bool $configLoaded = false;
 
     /** @var array<string, mixed> */
@@ -38,7 +37,6 @@ final class ConfigLoader
 
         if ($this->rootPath !== null) {
             $this->loadDotEnv();
-            $this->envLoaded = true;
             
             // Defer config file loading until needed
         }
