@@ -141,8 +141,12 @@ $config = ConfigLoader::getInstance();
 #### `get(string $key, mixed $default = null): mixed`
 
 Retrieves a configuration value by key. Supports dot notation for nested values.
+#### `get(string $key): mixed`
+
+Gets a configuration value. Returns the value if the key exists, `null` otherwise.
 ```php
-$dbHost = $config->get('database.connections.mysql.host');```
+$dbHost = $config->get('database.connections.mysql.host');
+```
 
 #### `set(string $key, mixed $value): bool`
 
