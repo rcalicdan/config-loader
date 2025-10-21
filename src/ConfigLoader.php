@@ -22,13 +22,15 @@ final class ConfigLoader
 {
     private static ?self $instance = null;
     private ?string $rootPath = null;
+    private bool $envLoaded = false;
+    private bool $configLoaded = false;
 
     /** @var array<string, mixed> */
     private array $config = [];
 
     /**
      * The constructor is private to enforce the singleton pattern.
-     * It performs the entire one-time loading process.
+     * It performs the minimal one-time initialization.
      */
     private function __construct()
     {
@@ -36,7 +38,9 @@ final class ConfigLoader
 
         if ($this->rootPath !== null) {
             $this->loadDotEnv();
-            $this->loadConfigFiles();
+            $this->envLoaded = true;
+            
+            // Defer config file loading until needed
         }
     }
 
@@ -61,6 +65,17 @@ final class ConfigLoader
     }
 
     /**
+     * Ensures config files are loaded (lazy loading).
+     */
+    private function ensureConfigLoaded(): void
+    {
+        if (!$this->configLoaded && $this->rootPath !== null) {
+            $this->loadConfigFiles();
+            $this->configLoaded = true;
+        }
+    }
+
+    /**
      * Retrieves a configuration value by its key, supporting dot notation.
      * e.g., get('database') returns the entire database config array
      *       get('database.connections.mysql.host') returns a nested value
@@ -71,6 +86,8 @@ final class ConfigLoader
      */
     public function get(string $key, $default = null)
     {
+        $this->ensureConfigLoaded();
+        
         if (array_key_exists($key, $this->config)) {
             return $this->config[$key];
         }
@@ -87,6 +104,8 @@ final class ConfigLoader
      */
     public function has(string $key): bool
     {
+        $this->ensureConfigLoaded();
+        
         if (array_key_exists($key, $this->config)) {
             return true;
         }
@@ -145,7 +164,6 @@ final class ConfigLoader
 
             $remainingSegments = array_slice($segments, $i);
 
-            // Use strict comparison instead of empty()
             if ($remainingSegments === []) {
                 $this->config[$fileKey] = $value;
                 return true;
@@ -215,7 +233,6 @@ final class ConfigLoader
     private function arrayKeyExists($value, array $segments): bool
     {
         foreach ($segments as $segment) {
-            // Ensure $value is an array before accessing
             if (!is_array($value) || !array_key_exists($segment, $value)) {
                 return false;
             }
@@ -233,6 +250,7 @@ final class ConfigLoader
      */
     public function all(): array
     {
+        $this->ensureConfigLoaded();
         return $this->config;
     }
 
@@ -293,7 +311,6 @@ final class ConfigLoader
     /**
      * Searches upwards from the current directory to find the project root.
      * The root is identified by the presence of a `vendor` directory.
-     * This operation is memoized (cached) for performance.
      */
     private function findProjectRoot(): ?string
     {
@@ -336,11 +353,6 @@ final class ConfigLoader
     /**
      * Loads all .php files from the project root's /config directory recursively.
      * Nested directories are converted to dot notation keys.
-     *
-     * Example structure:
-     * - config/database.php -> 'database'
-     * - config/hello/test.php -> 'hello.test'
-     * - config/services/mail/smtp.php -> 'services.mail.smtp'
      */
     private function loadConfigFiles(): void
     {
@@ -389,9 +401,7 @@ final class ConfigLoader
             }
 
             $relativePath = str_replace($baseDir . '/', '', $path);
-
             $relativePath = substr($relativePath, 0, -4);
-
             $key = str_replace(['/', '\\'], '.', $relativePath);
 
             $this->config[$key] = require $path;
