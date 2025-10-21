@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rcalicdan\ConfigLoader;
 
 use Dotenv\Dotenv;
+use Rcalicdan\ConfigLoader\Exceptions\ConfigException;
 use Rcalicdan\ConfigLoader\Exceptions\ConfigKeyNotFoundException;
 use Rcalicdan\ConfigLoader\Exceptions\EnvFileLoadException;
 use Rcalicdan\ConfigLoader\Exceptions\EnvFileNotFoundException;
@@ -102,7 +103,7 @@ final class ConfigLoader
 
                 $remainingSegments = array_slice($segments, $i);
 
-                if (empty($remainingSegments)) {
+                if ($remainingSegments === []) {
                     return true;
                 }
 
@@ -117,7 +118,7 @@ final class ConfigLoader
 
     /**
      * Set a configuration value at runtime.
-     * 
+     *
      * @param string $key
      * @param mixed $value
      * @return bool True if the key exists and was set successfully, false otherwise
@@ -144,7 +145,8 @@ final class ConfigLoader
 
             $remainingSegments = array_slice($segments, $i);
 
-            if (empty($remainingSegments)) {
+            // Use strict comparison instead of empty()
+            if ($remainingSegments === []) {
                 $this->config[$fileKey] = $value;
                 return true;
             }
@@ -158,7 +160,7 @@ final class ConfigLoader
 
     /**
      * Set a configuration value at runtime or fail with an exception.
-     * 
+     *
      * @param string $key
      * @param mixed $value
      * @throws ConfigKeyNotFoundException
@@ -186,12 +188,17 @@ final class ConfigLoader
         $current = &$this->config[$fileKey];
 
         foreach ($segments as $index => $segment) {
+            if (! is_array($current)) {
+                throw new ConfigException("Cannot set nested value because a parent key is not an array.");
+            }
+
             if ($index === count($segments) - 1) {
                 $current[$segment] = $value;
+
                 return;
             }
 
-            if (!isset($current[$segment]) || !is_array($current[$segment])) {
+            if (! isset($current[$segment]) || ! is_array($current[$segment])) {
                 $current[$segment] = [];
             }
 
@@ -208,6 +215,7 @@ final class ConfigLoader
     private function arrayKeyExists($value, array $segments): bool
     {
         foreach ($segments as $segment) {
+            // Ensure $value is an array before accessing
             if (!is_array($value) || !array_key_exists($segment, $value)) {
                 return false;
             }
