@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rcalicdan\ConfigLoader;
 
 use Dotenv\Dotenv;
+use Rcalicdan\ConfigLoader\Exceptions\ConfigKeyNotFoundException;
 use Rcalicdan\ConfigLoader\Exceptions\EnvFileLoadException;
 use Rcalicdan\ConfigLoader\Exceptions\EnvFileNotFoundException;
 use Rcalicdan\ConfigLoader\Exceptions\ProjectRootNotFoundException;
@@ -62,6 +63,7 @@ final class ConfigLoader
      * Retrieves a configuration value by its key, supporting dot notation.
      * e.g., get('database') returns the entire database config array
      *       get('database.connections.mysql.host') returns a nested value
+     *       get('hello.test') returns config/hello/test.php
      *
      * @param  mixed  $default
      * @return mixed
@@ -90,20 +92,130 @@ final class ConfigLoader
 
         if (str_contains($key, '.')) {
             $segments = explode('.', $key);
-            $value = $this->config;
 
-            foreach ($segments as $segment) {
-                if (is_array($value) && array_key_exists($segment, $value)) {
-                    $value = $value[$segment];
-                } else {
-                    return false;
+            for ($i = count($segments); $i > 0; $i--) {
+                $fileKey = implode('.', array_slice($segments, 0, $i));
+
+                if (!array_key_exists($fileKey, $this->config)) {
+                    continue;
                 }
+
+                $remainingSegments = array_slice($segments, $i);
+
+                if (empty($remainingSegments)) {
+                    return true;
+                }
+
+                return $this->arrayKeyExists($this->config[$fileKey], $remainingSegments);
             }
 
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * Set a configuration value at runtime.
+     * 
+     * @param string $key
+     * @param mixed $value
+     * @return bool True if the key exists and was set successfully, false otherwise
+     */
+    public function set(string $key, $value): bool
+    {
+        if (!$this->has($key)) {
+            return false;
+        }
+
+        if (!str_contains($key, '.')) {
+            $this->config[$key] = $value;
+            return true;
+        }
+
+        $segments = explode('.', $key);
+
+        for ($i = count($segments); $i > 0; $i--) {
+            $fileKey = implode('.', array_slice($segments, 0, $i));
+
+            if (!array_key_exists($fileKey, $this->config)) {
+                continue;
+            }
+
+            $remainingSegments = array_slice($segments, $i);
+
+            if (empty($remainingSegments)) {
+                $this->config[$fileKey] = $value;
+                return true;
+            }
+
+            $this->setNestedValue($fileKey, $remainingSegments, $value);
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Set a configuration value at runtime or fail with an exception.
+     * 
+     * @param string $key
+     * @param mixed $value
+     * @throws ConfigKeyNotFoundException
+     * @return void
+     */
+    public function setOrFail(string $key, $value): void
+    {
+        if (!$this->set($key, $value)) {
+            throw new ConfigKeyNotFoundException(
+                "Configuration key '{$key}' does not exist and cannot be set."
+            );
+        }
+    }
+
+    /**
+     * Set a nested value in the configuration array.
+     *
+     * @param string $fileKey
+     * @param array<int, string> $segments
+     * @param mixed $value
+     * @return void
+     */
+    private function setNestedValue(string $fileKey, array $segments, $value): void
+    {
+        $current = &$this->config[$fileKey];
+
+        foreach ($segments as $index => $segment) {
+            if ($index === count($segments) - 1) {
+                $current[$segment] = $value;
+                return;
+            }
+
+            if (!isset($current[$segment]) || !is_array($current[$segment])) {
+                $current[$segment] = [];
+            }
+
+            $current = &$current[$segment];
+        }
+    }
+
+    /**
+     * Check if nested keys exist in an array.
+     *
+     * @param mixed $value
+     * @param array<int, string> $segments
+     */
+    private function arrayKeyExists($value, array $segments): bool
+    {
+        foreach ($segments as $segment) {
+            if (!is_array($value) || !array_key_exists($segment, $value)) {
+                return false;
+            }
+
+            $value = $value[$segment];
+        }
+
+        return true;
     }
 
     /**
@@ -133,14 +245,38 @@ final class ConfigLoader
     private function getNestedValue(string $key, $default = null)
     {
         $segments = explode('.', $key);
-        $value = $this->config;
 
+        for ($i = count($segments); $i > 0; $i--) {
+            $fileKey = implode('.', array_slice($segments, 0, $i));
+
+            if (! array_key_exists($fileKey, $this->config)) {
+                continue;
+            }
+
+            $remainingSegments = array_slice($segments, $i);
+
+            return $this->traverseArray($this->config[$fileKey], $remainingSegments, $default);
+        }
+
+        return $default;
+    }
+
+    /**
+     * Traverse an array using the provided segments.
+     *
+     * @param  mixed  $value
+     * @param  array<int, string>  $segments
+     * @param  mixed  $default
+     * @return mixed
+     */
+    private function traverseArray($value, array $segments, $default = null)
+    {
         foreach ($segments as $segment) {
-            if (is_array($value) && array_key_exists($segment, $value)) {
-                $value = $value[$segment];
-            } else {
+            if (! is_array($value) || ! array_key_exists($segment, $value)) {
                 return $default;
             }
+
+            $value = $value[$segment];
         }
 
         return $value;
@@ -155,7 +291,7 @@ final class ConfigLoader
     {
         $dir = __DIR__;
         for ($i = 0; $i < 10; $i++) {
-            if (is_dir($dir.'/vendor')) {
+            if (is_dir($dir . '/vendor')) {
                 return $dir;
             }
 
@@ -175,7 +311,7 @@ final class ConfigLoader
             throw new ProjectRootNotFoundException();
         }
 
-        $envFile = $this->rootPath.'/.env';
+        $envFile = $this->rootPath . '/.env';
 
         if (! file_exists($envFile)) {
             throw new EnvFileNotFoundException($envFile);
@@ -190,7 +326,13 @@ final class ConfigLoader
     }
 
     /**
-     * Loads all .php files from the project root's /config directory.
+     * Loads all .php files from the project root's /config directory recursively.
+     * Nested directories are converted to dot notation keys.
+     *
+     * Example structure:
+     * - config/database.php -> 'database'
+     * - config/hello/test.php -> 'hello.test'
+     * - config/services/mail/smtp.php -> 'services.mail.smtp'
      */
     private function loadConfigFiles(): void
     {
@@ -198,16 +340,53 @@ final class ConfigLoader
             throw new ProjectRootNotFoundException();
         }
 
-        $configDir = $this->rootPath.'/config';
-        $files = is_dir($configDir) ? glob($configDir.'/*.php') : false;
+        $configDir = $this->rootPath . '/config';
 
-        if ($files === false || $files === []) {
+        if (! is_dir($configDir)) {
             return;
         }
 
-        foreach ($files as $file) {
-            $key = basename($file, '.php');
-            $this->config[$key] = require $file;
+        $this->loadConfigFilesRecursively($configDir, $configDir);
+    }
+
+    /**
+     * Recursively load configuration files from a directory.
+     *
+     * @param string $directory The directory to scan
+     * @param string $baseDir The base config directory for calculating relative paths
+     */
+    private function loadConfigFilesRecursively(string $directory, string $baseDir): void
+    {
+        $items = scandir($directory);
+
+        if ($items === false) {
+            return;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $path = $directory . '/' . $item;
+
+            if (is_dir($path)) {
+                $this->loadConfigFilesRecursively($path, $baseDir);
+
+                continue;
+            }
+
+            if (pathinfo($path, PATHINFO_EXTENSION) !== 'php') {
+                continue;
+            }
+
+            $relativePath = str_replace($baseDir . '/', '', $path);
+
+            $relativePath = substr($relativePath, 0, -4);
+
+            $key = str_replace(['/', '\\'], '.', $relativePath);
+
+            $this->config[$key] = require $path;
         }
     }
 }
