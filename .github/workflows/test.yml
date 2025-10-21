@@ -32,6 +32,9 @@ jobs:
             dependencies-php-${{ matrix.php }}-composer-
             dependencies-php-
 
+      - name: Install dependencies
+        run: composer install
+
       - name: Run Static Analysis
         run: ./vendor/bin/phpstan analyse
 
