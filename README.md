@@ -22,7 +22,7 @@ composer require rcalicdan/config-loader
 
 ## Requirements
 
-*   PHP 8.2 or higher
+*   PHP 8.3 or higher
 
 ## Quick Start
 
@@ -238,8 +238,6 @@ Config::set('database.default', 'sqlite');
 
 The library throws specific exceptions for error handling:
 *   `ProjectRootNotFoundException`
-*   `EnvFileNotFoundException`
-*   `EnvFileLoadException`
 *   `ConfigKeyNotFoundException`
 *   `ConfigException`
 
