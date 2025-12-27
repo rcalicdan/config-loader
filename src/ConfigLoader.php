@@ -8,7 +8,6 @@ use Dotenv\Dotenv;
 use Rcalicdan\ConfigLoader\Exceptions\ConfigException;
 use Rcalicdan\ConfigLoader\Exceptions\ConfigKeyNotFoundException;
 use Rcalicdan\ConfigLoader\Exceptions\EnvFileLoadException;
-use Rcalicdan\ConfigLoader\Exceptions\EnvFileNotFoundException;
 use Rcalicdan\ConfigLoader\Exceptions\ProjectRootNotFoundException;
 
 /**
@@ -130,7 +129,6 @@ final class ConfigLoader
         if ($key === null) {
             $configKey = pathinfo($filename, PATHINFO_FILENAME);
             $this->config[$configKey] = $config;
-
             return $config;
         }
 
@@ -147,9 +145,13 @@ final class ConfigLoader
             return $this->traverseArray($config, $segments, $default);
         }
 
-        $this->config[$key] = $config;
+        if (\array_key_exists($key, $config)) {
+            $this->config[$key] = $config[$key];
+            return $config[$key];
+        }
 
-        return $config;
+        $this->config[$key] = $config;
+        return $default;
     }
 
     /**
@@ -396,7 +398,7 @@ final class ConfigLoader
         $envFile = $this->rootPath . '/.env';
 
         if (! file_exists($envFile)) {
-            throw new EnvFileNotFoundException($envFile);
+            return;
         }
 
         try {
