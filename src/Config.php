@@ -14,7 +14,9 @@ final class Config
     /**
      * Prevent instantiation of this static class.
      */
-    private function __construct() {}
+    private function __construct()
+    {
+    }
 
     /**
      * Retrieves a configuration value by its key, supporting dot notation.
@@ -26,6 +28,19 @@ final class Config
     public static function get(string $key, $default = null)
     {
         return ConfigLoader::getInstance()->get($key, $default);
+    }
+
+    /**
+     * Load a configuration file from the project root directory.
+     *
+     * @param string $filename
+     * @param string|null $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public static function loadFromRoot(string $filename, ?string $key = null, $default = null)
+    {
+        return ConfigLoader::getInstance()->loadFromRoot($filename, $key, $default);
     }
 
     /**

@@ -37,7 +37,7 @@ final class ConfigLoader
 
         if ($this->rootPath !== null) {
             $this->loadDotEnv();
-            
+
             // Defer config file loading until needed
         }
     }
@@ -67,7 +67,7 @@ final class ConfigLoader
      */
     private function ensureConfigLoaded(): void
     {
-        if (!$this->configLoaded && $this->rootPath !== null) {
+        if (! $this->configLoaded && $this->rootPath !== null) {
             $this->loadConfigFiles();
             $this->configLoaded = true;
         }
@@ -85,8 +85,8 @@ final class ConfigLoader
     public function get(string $key, $default = null)
     {
         $this->ensureConfigLoaded();
-        
-        if (array_key_exists($key, $this->config)) {
+
+        if (\array_key_exists($key, $this->config)) {
             return $this->config[$key];
         }
 
@@ -98,23 +98,78 @@ final class ConfigLoader
     }
 
     /**
+     * Load a configuration file from the project root directory.
+     *
+     * @param string $filename The name of the config file (with or without .php extension)
+     * @param string|null $key Optional key to store the config under (supports dot notation). If null, uses filename
+     * @param mixed $default Default value to return if file doesn't exist or isn't an array
+     * @return mixed
+     */
+    public function loadFromRoot(string $filename, ?string $key = null, $default = null)
+    {
+        if ($this->rootPath === null) {
+            throw new ProjectRootNotFoundException();
+        }
+
+        if (! str_ends_with($filename, '.php')) {
+            $filename .= '.php';
+        }
+
+        $filePath = $this->rootPath . '/' . $filename;
+
+        if (! file_exists($filePath)) {
+            return $default;
+        }
+
+        $config = require $filePath;
+
+        if (! \is_array($config)) {
+            return $default;
+        }
+
+        if ($key === null) {
+            $configKey = pathinfo($filename, PATHINFO_FILENAME);
+            $this->config[$configKey] = $config;
+
+            return $config;
+        }
+
+        if (str_contains($key, '.')) {
+            $segments = explode('.', $key);
+            $baseKey = $segments[0];
+
+            if (\array_key_exists($baseKey, $config) && \count($config) === 1) {
+                $this->config[$baseKey] = $config[$baseKey];
+            } else {
+                $this->config[$baseKey] = $config;
+            }
+
+            return $this->traverseArray($config, $segments, $default);
+        }
+
+        $this->config[$key] = $config;
+
+        return $config;
+    }
+
+    /**
      * Check if a configuration key exists.
      */
     public function has(string $key): bool
     {
         $this->ensureConfigLoaded();
-        
-        if (array_key_exists($key, $this->config)) {
+
+        if (\array_key_exists($key, $this->config)) {
             return true;
         }
 
         if (str_contains($key, '.')) {
             $segments = explode('.', $key);
 
-            for ($i = count($segments); $i > 0; $i--) {
+            for ($i = \count($segments); $i > 0; $i--) {
                 $fileKey = implode('.', array_slice($segments, 0, $i));
 
-                if (!array_key_exists($fileKey, $this->config)) {
+                if (! \array_key_exists($fileKey, $this->config)) {
                     continue;
                 }
 
@@ -142,32 +197,35 @@ final class ConfigLoader
      */
     public function set(string $key, $value): bool
     {
-        if (!$this->has($key)) {
+        if (! $this->has($key)) {
             return false;
         }
 
-        if (!str_contains($key, '.')) {
+        if (! str_contains($key, '.')) {
             $this->config[$key] = $value;
+
             return true;
         }
 
         $segments = explode('.', $key);
 
-        for ($i = count($segments); $i > 0; $i--) {
+        for ($i = \count($segments); $i > 0; $i--) {
             $fileKey = implode('.', array_slice($segments, 0, $i));
 
-            if (!array_key_exists($fileKey, $this->config)) {
+            if (! \array_key_exists($fileKey, $this->config)) {
                 continue;
             }
 
-            $remainingSegments = array_slice($segments, $i);
+            $remainingSegments = \array_slice($segments, $i);
 
             if ($remainingSegments === []) {
                 $this->config[$fileKey] = $value;
+
                 return true;
             }
 
             $this->setNestedValue($fileKey, $remainingSegments, $value);
+
             return true;
         }
 
@@ -184,7 +242,7 @@ final class ConfigLoader
      */
     public function setOrFail(string $key, $value): void
     {
-        if (!$this->set($key, $value)) {
+        if (! $this->set($key, $value)) {
             throw new ConfigKeyNotFoundException(
                 "Configuration key '{$key}' does not exist and cannot be set."
             );
@@ -204,17 +262,17 @@ final class ConfigLoader
         $current = &$this->config[$fileKey];
 
         foreach ($segments as $index => $segment) {
-            if (! is_array($current)) {
-                throw new ConfigException("Cannot set nested value because a parent key is not an array.");
+            if (! \is_array($current)) {
+                throw new ConfigException('Cannot set nested value because a parent key is not an array.');
             }
 
-            if ($index === count($segments) - 1) {
+            if ($index === \count($segments) - 1) {
                 $current[$segment] = $value;
 
                 return;
             }
 
-            if (! isset($current[$segment]) || ! is_array($current[$segment])) {
+            if (! isset($current[$segment]) || ! \is_array($current[$segment])) {
                 $current[$segment] = [];
             }
 
@@ -231,7 +289,7 @@ final class ConfigLoader
     private function arrayKeyExists($value, array $segments): bool
     {
         foreach ($segments as $segment) {
-            if (!is_array($value) || !array_key_exists($segment, $value)) {
+            if (! \is_array($value) || ! \array_key_exists($segment, $value)) {
                 return false;
             }
 
@@ -249,6 +307,7 @@ final class ConfigLoader
     public function all(): array
     {
         $this->ensureConfigLoaded();
+
         return $this->config;
     }
 
@@ -270,14 +329,14 @@ final class ConfigLoader
     {
         $segments = explode('.', $key);
 
-        for ($i = count($segments); $i > 0; $i--) {
-            $fileKey = implode('.', array_slice($segments, 0, $i));
+        for ($i = \count($segments); $i > 0; $i--) {
+            $fileKey = implode('.', \array_slice($segments, 0, $i));
 
-            if (! array_key_exists($fileKey, $this->config)) {
+            if (! \array_key_exists($fileKey, $this->config)) {
                 continue;
             }
 
-            $remainingSegments = array_slice($segments, $i);
+            $remainingSegments = \array_slice($segments, $i);
 
             return $this->traverseArray($this->config[$fileKey], $remainingSegments, $default);
         }
@@ -296,7 +355,7 @@ final class ConfigLoader
     private function traverseArray($value, array $segments, $default = null)
     {
         foreach ($segments as $segment) {
-            if (! is_array($value) || ! array_key_exists($segment, $value)) {
+            if (! \is_array($value) || ! \array_key_exists($segment, $value)) {
                 return $default;
             }
 

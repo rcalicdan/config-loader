@@ -13,13 +13,24 @@ namespace Rcalicdan\ConfigLoader;
  */
 function config(?string $key = null, $default = null)
 {
-    $configLoader = ConfigLoader::getInstance();
-
     if ($key === null) {
-        return $configLoader;
+        return ConfigLoader::getInstance();
     }
 
-    return $configLoader->get($key, $default);
+    return Config::get($key, $default);
+}
+
+/**
+ * Load a configuration file from the project root directory.
+ *
+ * @param string $filename The name of the config file (with or without .php extension)
+ * @param string|null $key Optional key to store the config under (supports dot notation). If null, uses filename
+ * @param mixed $default Default value to return if file doesn't exist or isn't an array
+ * @return mixed
+ */
+function configRoot(string $filename, ?string $key = null, $default = null)
+{
+    return ConfigLoader::getInstance()->loadFromRoot($filename, $key, $default);
 }
 
 /**
@@ -45,7 +56,7 @@ function env(string $key, $default = null, bool $convertNumeric = false)
         return $default;
     }
 
-    if (is_string($value)) {
+    if (\is_string($value)) {
         $converted = match (strtolower($value)) {
             'true', '(true)' => true,
             'false', '(false)' => false,
@@ -54,7 +65,7 @@ function env(string $key, $default = null, bool $convertNumeric = false)
             default => null,
         };
 
-        if ($converted !== null || in_array(strtolower($value), ['null', '(null)', 'empty', '(empty)'], true)) {
+        if ($converted !== null || \in_array(strtolower($value), ['null', '(null)', 'empty', '(empty)'], true)) {
             return $converted;
         }
 

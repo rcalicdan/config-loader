@@ -13,7 +13,7 @@ describe('ConfigLoader', function () {
 
         $configDir = getcwd() . '/config';
 
-        if (!is_dir($configDir)) {
+        if (! is_dir($configDir)) {
             return;
         }
 
@@ -28,7 +28,7 @@ describe('ConfigLoader', function () {
     afterEach(function () {
         $configDir = getcwd() . '/config';
 
-        if (!is_dir($configDir)) {
+        if (! is_dir($configDir)) {
             return;
         }
 
@@ -81,17 +81,17 @@ describe('ConfigLoader', function () {
     describe('Dot Notation', function () {
         it('handles nested file structures with dot notation', function () {
             $configDir = getcwd() . '/config';
-            if (!is_dir($configDir)) {
+            if (! is_dir($configDir)) {
                 mkdir($configDir, 0777, true);
             }
 
             $servicesDir = $configDir . '/test_services';
             $mailDir = $servicesDir . '/test_mail';
 
-            if (!is_dir($servicesDir)) {
+            if (! is_dir($servicesDir)) {
                 mkdir($servicesDir, 0777, true);
             }
-            if (!is_dir($mailDir)) {
+            if (! is_dir($mailDir)) {
                 mkdir($mailDir, 0777, true);
             }
 
@@ -397,7 +397,7 @@ describe('ConfigLoader', function () {
 
             $configDir = getcwd() . '/config';
 
-            if (!is_dir($configDir)) {
+            if (! is_dir($configDir)) {
                 return;
             }
 
@@ -412,7 +412,7 @@ describe('ConfigLoader', function () {
         afterEach(function () {
             $configDir = getcwd() . '/config';
 
-            if (!is_dir($configDir)) {
+            if (! is_dir($configDir)) {
                 return;
             }
 
@@ -428,7 +428,7 @@ describe('ConfigLoader', function () {
 
             it('sets a simple configuration value', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -452,7 +452,7 @@ describe('ConfigLoader', function () {
 
             it('sets a nested configuration value using dot notation', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -482,7 +482,7 @@ describe('ConfigLoader', function () {
 
             it('sets deeply nested configuration values', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -510,7 +510,7 @@ describe('ConfigLoader', function () {
 
             it('sets entire array values', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -541,7 +541,7 @@ describe('ConfigLoader', function () {
 
             it('returns false when setting non-existent key', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -561,7 +561,7 @@ describe('ConfigLoader', function () {
 
             it('returns false when setting deeply nested non-existent key', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -592,17 +592,17 @@ describe('ConfigLoader', function () {
 
             it('sets configuration value for nested file structures', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
                 $servicesDir = $configDir . '/test_services';
                 $mailDir = $servicesDir . '/test_mail';
 
-                if (!is_dir($servicesDir)) {
+                if (! is_dir($servicesDir)) {
                     mkdir($servicesDir, 0777, true);
                 }
-                if (!is_dir($mailDir)) {
+                if (! is_dir($mailDir)) {
                     mkdir($mailDir, 0777, true);
                 }
 
@@ -635,7 +635,7 @@ describe('ConfigLoader', function () {
 
             it('handles setting values with different types', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -676,7 +676,7 @@ describe('ConfigLoader', function () {
 
             it('sets configuration value when key exists', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -694,7 +694,7 @@ describe('ConfigLoader', function () {
 
             it('sets nested configuration value when key exists', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -716,7 +716,7 @@ describe('ConfigLoader', function () {
 
             it('throws exception when key does not exist', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -727,13 +727,14 @@ describe('ConfigLoader', function () {
                 ConfigLoader::reset();
                 $config = ConfigLoader::getInstance();
 
-                expect(fn() => $config->setOrFail('test_app.nonexistent', 'value'))
-                    ->toThrow(ConfigKeyNotFoundException::class);
+                expect(fn () => $config->setOrFail('test_app.nonexistent', 'value'))
+                    ->toThrow(ConfigKeyNotFoundException::class)
+                ;
             });
 
             it('throws exception with correct message', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -749,7 +750,8 @@ describe('ConfigLoader', function () {
                     expect(true)->toBeFalse();
                 } catch (ConfigKeyNotFoundException $e) {
                     expect($e->getMessage())->toContain('test_app.missing.key')
-                        ->and($e->getMessage())->toContain('does not exist');
+                        ->and($e->getMessage())->toContain('does not exist')
+                    ;
                 }
             });
 
@@ -757,13 +759,14 @@ describe('ConfigLoader', function () {
                 ConfigLoader::reset();
                 $config = ConfigLoader::getInstance();
 
-                expect(fn() => $config->setOrFail('nonexistent_file.key', 'value'))
-                    ->toThrow(ConfigKeyNotFoundException::class);
+                expect(fn () => $config->setOrFail('nonexistent_file.key', 'value'))
+                    ->toThrow(ConfigKeyNotFoundException::class)
+                ;
             });
 
             it('throws exception for deeply nested non-existent key', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -778,8 +781,9 @@ describe('ConfigLoader', function () {
                 ConfigLoader::reset();
                 $config = ConfigLoader::getInstance();
 
-                expect(fn() => $config->setOrFail('test_database.connections.pgsql.host', 'postgres'))
-                    ->toThrow(ConfigKeyNotFoundException::class);
+                expect(fn () => $config->setOrFail('test_database.connections.pgsql.host', 'postgres'))
+                    ->toThrow(ConfigKeyNotFoundException::class)
+                ;
             });
         });
 
@@ -787,7 +791,7 @@ describe('ConfigLoader', function () {
 
             it('sets configuration using static method', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -806,7 +810,7 @@ describe('ConfigLoader', function () {
 
             it('sets configuration using static setOrFail method', function () {
                 $configDir = getcwd() . '/config';
-                if (!is_dir($configDir)) {
+                if (! is_dir($configDir)) {
                     mkdir($configDir, 0777, true);
                 }
 
@@ -824,12 +828,12 @@ describe('ConfigLoader', function () {
             it('throws exception using static setOrFail for non-existent key', function () {
                 ConfigLoader::reset();
 
-                expect(fn() => Config::setOrFail('nonexistent.key', 'value'))
-                    ->toThrow(ConfigKeyNotFoundException::class);
+                expect(fn () => Config::setOrFail('nonexistent.key', 'value'))
+                    ->toThrow(ConfigKeyNotFoundException::class)
+                ;
             });
         });
     });
-
 
     describe('Helper Methods', function () {
 
@@ -892,6 +896,319 @@ describe('ConfigLoader', function () {
             $config = ConfigLoader::getInstance();
 
             expect($config->all())->toBeArray();
+        });
+    });
+
+    describe('loadFromRoot() method', function () {
+
+        beforeEach(function () {
+            ConfigLoader::reset();
+
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            $testFiles = glob($rootPath . '/test_*.php');
+            foreach ($testFiles as $file) {
+                if (file_exists($file)) {
+                    unlink($file);
+                }
+            }
+        });
+
+        afterEach(function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            $testFiles = glob($rootPath . '/test_*.php');
+            foreach ($testFiles as $file) {
+                if (file_exists($file)) {
+                    unlink($file);
+                }
+            }
+        });
+
+        it('loads config file from project root', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_root_config.php', '<?php return ' . var_export([
+                'app_name' => 'Test App',
+                'version' => '1.0.0',
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->loadFromRoot('test_root_config.php');
+
+            expect($result)->toBeArray()
+                ->and($result['app_name'])->toBe('Test App')
+                ->and($result['version'])->toBe('1.0.0')
+                ->and($config->get('test_root_config.app_name'))->toBe('Test App')
+            ;
+        });
+
+        it('loads config file without .php extension', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_simple.php', '<?php return ' . var_export([
+                'key' => 'value',
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->loadFromRoot('test_simple');
+
+            expect($result)->toBeArray()
+                ->and($result['key'])->toBe('value')
+            ;
+        });
+
+        it('loads and accesses nested values with dot notation', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_database.php', '<?php return ' . var_export([
+                'database' => [
+                    'host' => 'localhost',
+                    'port' => 3306,
+                    'credentials' => [
+                        'username' => 'root',
+                        'password' => 'secret',
+                    ],
+                ],
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $host = $config->loadFromRoot('test_database', 'database.host');
+
+            expect($host)->toBe('localhost');
+        });
+
+        it('loads deeply nested values with dot notation', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_config.php', '<?php return ' . var_export([
+                'connections' => [
+                    'mysql' => [
+                        'host' => 'localhost',
+                        'port' => 3306,
+                        'settings' => [
+                            'charset' => 'utf8mb4',
+                            'collation' => 'utf8mb4_unicode_ci',
+                        ],
+                    ],
+                ],
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $charset = $config->loadFromRoot('test_config', 'connections.mysql.settings.charset');
+
+            expect($charset)->toBe('utf8mb4')
+                ->and($config->get('connections.mysql.settings.collation'))->toBe('utf8mb4_unicode_ci')
+            ;
+        });
+
+        it('loads entire nested array with dot notation', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_services.php', '<?php return ' . var_export([
+                'services' => [
+                    'cache' => [
+                        'driver' => 'redis',
+                        'host' => '127.0.0.1',
+                    ],
+                    'queue' => [
+                        'driver' => 'sync',
+                    ],
+                ],
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $cache = $config->loadFromRoot('test_services', 'services.cache');
+
+            expect($cache)->toBeArray()
+                ->and($cache['driver'])->toBe('redis')
+                ->and($cache['host'])->toBe('127.0.0.1')
+            ;
+        });
+
+        it('stores config under custom key', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_custom.php', '<?php return ' . var_export([
+                'setting' => 'value',
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $config->loadFromRoot('test_custom', 'my_custom_key');
+
+            expect($config->get('my_custom_key.setting'))->toBe('value');
+        });
+
+        it('returns default value when file does not exist', function () {
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->loadFromRoot('non_existent_file.php', null, 'default_value');
+
+            expect($result)->toBe('default_value');
+        });
+
+        it('returns default value when file is not an array', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_string.php', '<?php return "string value";');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->loadFromRoot('test_string', null, ['default' => 'array']);
+
+            expect($result)->toBe(['default' => 'array']);
+        });
+
+        it('returns default value for non-existent nested key', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_partial.php', '<?php return ' . var_export([
+                'database' => [
+                    'host' => 'localhost',
+                ],
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->loadFromRoot('test_partial', 'database.port', 3306);
+
+            expect($result)->toBe(3306);
+        });
+
+        it('returns empty array as default', function () {
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->loadFromRoot('missing.php', null, []);
+
+            expect($result)->toBeArray()
+                ->and($result)->toBeEmpty()
+            ;
+        });
+
+        it('loads multiple root config files independently', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_app_config.php', '<?php return ' . var_export([
+                'name' => 'App1',
+            ], true) . ';');
+
+            file_put_contents($rootPath . '/test_db_config.php', '<?php return ' . var_export([
+                'name' => 'DB1',
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $config->loadFromRoot('test_app_config', 'app');
+            $config->loadFromRoot('test_db_config', 'db');
+
+            expect($config->get('app.name'))->toBe('App1')
+                ->and($config->get('db.name'))->toBe('DB1')
+            ;
+        });
+
+        it('works with Config static facade', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_facade.php', '<?php return ' . var_export([
+                'setting' => 'facade_value',
+            ], true) . ';');
+
+            ConfigLoader::reset();
+
+            $result = Config::loadFromRoot('test_facade');
+
+            expect($result)->toBeArray()
+                ->and($result['setting'])->toBe('facade_value')
+                ->and(Config::get('test_facade.setting'))->toBe('facade_value')
+            ;
+        });
+
+        it('works with Config static facade and dot notation', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_facade_nested.php', '<?php return ' . var_export([
+                'api' => [
+                    'key' => 'secret123',
+                    'url' => 'https://api.example.com',
+                ],
+            ], true) . ';');
+
+            ConfigLoader::reset();
+
+            $key = Config::loadFromRoot('test_facade_nested', 'api.key');
+
+            expect($key)->toBe('secret123')
+                ->and(Config::get('api.url'))->toBe('https://api.example.com')
+            ;
+        });
+
+        it('handles numeric array keys', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_array.php', '<?php return ' . var_export([
+                'items' => ['first', 'second', 'third'],
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $config->loadFromRoot('test_array', 'list');
+
+            expect($config->get('list.items.0'))->toBe('first')
+                ->and($config->get('list.items.1'))->toBe('second')
+                ->and($config->get('list.items.2'))->toBe('third')
+            ;
+        });
+
+        it('returns null when traversing non-array value', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_scalar.php', '<?php return ' . var_export([
+                'value' => 'string',
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->loadFromRoot('test_scalar', 'value.nested');
+
+            expect($result)->toBeNull();
+        });
+
+        it('can be accessed via get() after loading', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+
+            file_put_contents($rootPath . '/test_accessible.php', '<?php return ' . var_export([
+                'feature' => [
+                    'enabled' => true,
+                    'options' => ['a', 'b', 'c'],
+                ],
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $config->loadFromRoot('test_accessible', 'features');
+
+            expect($config->get('features.feature.enabled'))->toBeTrue()
+                ->and($config->get('features.feature.options'))->toBeArray()
+                ->and($config->has('features.feature.enabled'))->toBeTrue()
+            ;
         });
     });
 });
