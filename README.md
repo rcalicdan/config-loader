@@ -9,8 +9,9 @@ A lightweight, zero-configuration PHP library for managing environment variables
 *   **Convention-based**: Works out-of-the-box with a standard `.env` file and `/config` directory structure.
 *   **Dot Notation**: Access nested configuration values easily (e.g., `database.connections.mysql.host`).
 *   **Runtime Configuration**: Modify configuration values on the fly for testing or dynamic adjustments.
+*   **Manual File Loading**: Load specific configuration files from your project root on demand.
 *   **Static Facade**: A convenient static wrapper (`Config::class`) for easy access anywhere in your code.
-*   **Helper Functions**: Simple global `config()` and `env()` functions for quick access.
+*   **Helper Functions**: Simple global `config()`, `configRoot()`, and `env()` functions for quick access.
 *   **Performance Optimized**: All loaded configuration is cached in memory for the duration of the request.
 
 ## Installation
@@ -45,6 +46,7 @@ The library provides global helper functions for the most common use cases. This
 
 ```php
 use function Rcalicdan\ConfigLoader\config;
+use function Rcalicdan\ConfigLoader\configRoot;
 use function Rcalicdan\ConfigLoader\env;
 
 // Access a configuration value
@@ -53,9 +55,11 @@ $dbHost = config('database.connections.mysql.host');
 // Provide a default if the key doesn't exist
 $appName = config('app.name', 'Default App Name');
 
+// Manually load a file from the project root
+$customSettings = configRoot('custom_settings.php');
+
 // Access an environment variable directly
 $debugMode = env('APP_DEBUG', false);
-$apiKey = env('API_KEY');
 ```
 
 ## Project Structure
@@ -66,7 +70,8 @@ ConfigLoader expects your project to follow this standard structure:
 your-project/
 ├── vendor/              # Composer dependencies (used to detect the project root)
 ├── .env                 # Your environment variables
-├── config/              # Configuration directory
+├── custom.php           # Custom config file in root (optional)
+├── config/              # Standard Configuration directory
 │   ├── app.php
 │   ├── database.php
 │   └── services/        # Nested directories are supported
@@ -92,24 +97,6 @@ return [
 ];
 ```
 
-#### `config/database.php`
-
-```php
-<?php
-
-return [
-    'default' => env('DB_CONNECTION', 'mysql'),
-    'connections' => [
-        'mysql' => [
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', 3306),
-            'database' => env('DB_DATABASE', 'forge'),
-            'username' => env('DB_USERNAME', 'forge'),
-        ],
-    ],
-];
-```
-
 ## Environment Variables (.env)
 
 Create a `.env` file in your project root. This file should **not** be committed to version control.
@@ -118,11 +105,6 @@ Create a `.env` file in your project root. This file should **not** be committed
 APP_NAME="My Awesome App"
 APP_ENV=local
 APP_DEBUG=true
-
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=my_app
-DB_USERNAME=root
 ```
 
 ## API Reference
@@ -134,217 +116,140 @@ The core singleton class that handles all loading and caching logic.
 #### `getInstance(): self`
 
 Gets the singleton instance of `ConfigLoader`.
-```php
-$config = ConfigLoader::getInstance();
-```
 
 #### `get(string $key, mixed $default = null): mixed`
 
 Retrieves a configuration value by key. Supports dot notation for nested values.
-#### `get(string $key): mixed`
-
-Gets a configuration value. Returns the value if the key exists, `null` otherwise.
-```php
-$dbHost = $config->get('database.connections.mysql.host');
-```
 
 #### `set(string $key, mixed $value): bool`
 
-Sets a configuration value at runtime. The key must already exist. Returns `true` on success, `false` on failure.
-```php
-// Overrides a value for the current request
-$config->set('app.env', 'testing');
-```
+Sets a configuration value at runtime. The key must already exist. Returns `true` on success.
 
 #### `setOrFail(string $key, mixed $value): void`
 
 Sets a configuration value at runtime. Throws `ConfigKeyNotFoundException` if the key does not exist.
-```php
-$config->setOrFail('app.name', 'New App Name');
-```
+
+#### `loadFromRoot(string $filename, ?string $key = null, mixed $default = null): mixed`
+
+Loads a specific configuration file from the project root directory.
+*   **$filename**: The name of the file (e.g., `'my_settings'` or `'my_settings.php'`).
+*   **$key**: Optional. The dot-notation key to store the data under. If `null`, the filename is used as the key.
+*   **$default**: Value to return if the file is not found or is not an array.
 
 #### `has(string $key): bool`
 
 Checks if a configuration key exists using dot notation.
-```php
-if ($config->has('database.connections.mysql')) {
-    // Logic here
-}
-```
 
 #### `all(): array`
 
 Gets all loaded configuration values as a single array.
-```php
-$allConfig = $config->all();
-```
 
 #### `getRootPath(): ?string`
 
 Gets the auto-detected project root path.
-```php
-$rootPath = $config->getRootPath();
-```
 
 #### `reset(): void`
 
-Resets the singleton instance. This is primarily useful for testing purposes.
-```php
-ConfigLoader::reset();
-```
+Resets the singleton instance.
 
 ### `Config` Class (Static Facade)
 
-A static helper class that provides convenient access to the `ConfigLoader` instance. All methods on this class are static and correspond directly to the instance methods on `ConfigLoader`.
+A static helper class that provides convenient access to the `ConfigLoader` instance.
 
 ```php
 use Rcalicdan\ConfigLoader\Config;
 
 // Examples:
 Config::get('app.name');
+Config::loadFromRoot('extra_config'); // Loads extra_config.php from root
 Config::set('app.debug', true);
-Config::has('database.default');
 Config::all();
-Config::getRootPath();
-Config::reset();
 ```
 
 ### Helper Functions
 
 #### `config(?string $key = null, mixed $default = null): mixed|ConfigLoader`
 
-The most common way to access configuration.
+The most common way to access standard configuration.
 ```php
-// Get a configuration value
+// Get a value
 $value = config('app.name');
 
-// Get a value with a default
-$value = config('app.timezone', 'UTC');
-
-// Get the entire ConfigLoader instance
+// Get the instance
 $loader = config();
-$loader->set('app.name', 'New Name');
+```
+
+#### `configRoot(string $filename, ?string $key = null, mixed $default = null): mixed`
+
+A helper function to load a configuration file from the project root (mirroring `loadFromRoot`).
+
+```php
+// Loads 'settings.php' from project root into the 'settings' key
+$settings = configRoot('settings'); 
+
+// Loads 'legacy.php' from root but stores it under the 'app.legacy' key
+configRoot('legacy', 'app.legacy');
 ```
 
 #### `env(string $key, mixed $default = null, bool $convertNumeric = false): mixed`
 
-Gets an environment variable with automatic type conversion for booleans, null, and empty strings.
-
-```php
-// Basic usage
-$debug = env('APP_DEBUG', false); // Returns a boolean
-
-// With numeric conversion
-$port = env('DB_PORT', 3306, true); // Returns an integer or float
-```
-
-**`env()` Automatic Type Conversion:**
-
-| .env Value        | Converted To           |
-| ----------------- | ---------------------- |
-| `true`, `(true)`  | `true` (boolean)       |
-| `false`, `(false)`| `false` (boolean)      |
-| `null`, `(null)`  | `null`                 |
-| `empty`, `(empty)`| `''` (empty string)    |
-| Numeric string (with `$convertNumeric = true`) | `int` or `float` |
+Gets an environment variable with automatic type conversion.
 
 ## Advanced Usage
 
 ### Nested Configuration Directories
 
 The library automatically loads files from subdirectories within `/config` and prefixes them with the directory name.
+For `config/services/mail.php`, access values via: `config('services.mail.host')`.
 
-For a file located at `config/services/mail.php`:
+### Loading Files Manually (`loadFromRoot`)
+
+While the library automatically scans the `config/` directory, you might want to load a file located in your project root or load a file strictly on demand.
+
+**Example: Loading a `payment.php` file from the project root**
+
 ```php
-// config/services/mail.php
-<?php
-return ['host' => env('MAIL_HOST', 'smtp.mailtrap.io')];
+// Project Root contains: payment.php returning ['stripe' => ['key' => '123']]
+
+// 1. Using the Facade
+Config::loadFromRoot('payment'); 
+// Access it:
+$key = Config::get('payment.stripe.key');
+
+// 2. Using the Helper with a custom key
+configRoot('payment', 'gateways');
+// Access it:
+$key = config('gateways.stripe.key');
 ```
 
-You can access its values using dot notation:
-```php
-$mailHost = config('services.mail.host');
-```
+**Note on Dot Notation in `loadFromRoot`:**
+If you load a file using a dot-notation key (e.g., `configRoot('file', 'my.nested.key')`), the library is smart enough to handle array wrapping. If your file returns `['my' => ['nested' => ['key' => ...]]]` and you load it into `'my.nested.key'`, the library will "unwrap" the redundant nesting so you don't end up with `my.nested.key.my.nested.key`.
 
 ### Modifying Configuration at Runtime
 
-You can override configuration values for a single request. This is especially useful in testing environments or for dynamically adjusting behavior.
+You can override configuration values for a single request.
 
 ```php
 // Temporarily switch to the sqlite database for a test
-config()->set('database.default', 'sqlite');
-
-// Or use the static facade
-Config::set('database.connections.mysql.host', '127.0.0.1');
-
-// This is useful in a testing bootstrap file:
-if (env('APP_ENV') === 'testing') {
-    Config::set('app.debug', true);
-    Config::set('database.default', 'testing_db');
-}
+Config::set('database.default', 'sqlite');
 ```
 
 ## Exception Handling
 
-The library throws specific, typed exceptions to make error handling clear.
-
-```php
-use Rcalicdan\ConfigLoader\ConfigLoader;
-use Rcalicdan\ConfigLoader\Exceptions\ProjectRootNotFoundException;
-use Rcalicdan\ConfigLoader\Exceptions\EnvFileNotFoundException;
-use Rcalicdan\ConfigLoader\Exceptions\EnvFileLoadException;
-use Rcalicdan\ConfigLoader\Exceptions\ConfigKeyNotFoundException;
-use Rcalicdan\ConfigLoader\Exceptions\ConfigException;
-
-try {
-    $config = ConfigLoader::getInstance();
-    $config->setOrFail('non.existent.key', 'value');
-} catch (ProjectRootNotFoundException $e) {
-    // Project root with a 'vendor' directory was not found.
-} catch (EnvFileNotFoundException $e) {
-    // The .env file does not exist in the project root.
-} catch (EnvFileLoadException $e) {
-    // There was an error parsing the .env file.
-} catch (ConfigKeyNotFoundException $e) {
-    // Thrown by setOrFail() when the key does not exist.
-} catch (ConfigException $e) {
-    // A general configuration error occurred, e.g., trying to set a nested
-    // value on a key that holds a string instead of an array.
-}
-```
+The library throws specific exceptions for error handling:
+*   `ProjectRootNotFoundException`
+*   `EnvFileNotFoundException`
+*   `EnvFileLoadException`
+*   `ConfigKeyNotFoundException`
+*   `ConfigException`
 
 ## Testing
 
-When writing unit or integration tests, it's crucial to reset the `ConfigLoader`'s state between tests to ensure they are isolated. Use the `reset()` method in your test suite's `setUp()` or `tearDown()` method.
+Use `ConfigLoader::reset()` or `Config::reset()` in your test `tearDown()` to ensure test isolation.
 
 ```php
-use PHPUnit\Framework\TestCase;
-use Rcalicdan\ConfigLoader\ConfigLoader;
-use Rcalicdan\ConfigLoader\Config;
-
-class MyTest extends TestCase
+protected function tearDown(): void
 {
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-        ConfigLoader::reset(); // Or Config::reset();
-    }
-
-    public function test_config_can_be_mocked_for_testing(): void
-    {
-        // First, ensure the instance is loaded
-        $config = Config::get('app.name');
-
-        // Now, modify it for this specific test
-        Config::set('app.env', 'testing');
-        $this->assertSame('testing', Config::get('app.env'));
-    }
+    Config::reset();
 }
 ```
-
-## How It Works
-
-1.  **Project Root Detection**: On first instantiation, `ConfigLoader` searches upwards from its own file location to find a directory containing a `vendor` folder. It caches this path.
-2.  **Load .env File**: It uses `vlucas/phpdotenv` to parse the `.env` file from the project root and load the variables into the environment.
-3.  **Load Config Files**: It recursively scans the `/config` directory, loading every `.php` file. The file's path and name are converted into a configuration key (e.g., `services/mail.php` becomes `services.mail`).
-4.  **Cache Results**: The final merged configuration array is stored in a private property of the singleton instance, ensuring all file I/O operations happen only once per request.
