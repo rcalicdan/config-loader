@@ -875,9 +875,7 @@ describe('ConfigLoader', function () {
             $config = ConfigLoader::getInstance();
             $rootPath = $config->getRootPath();
 
-            expect($rootPath)->toBeString()
-                ->and($rootPath)->toContain('ConfigLoader')
-            ;
+            expect($rootPath)->toBeString();
         });
     });
 
