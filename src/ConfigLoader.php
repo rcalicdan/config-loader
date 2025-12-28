@@ -110,11 +110,11 @@ final class ConfigLoader
             throw new ProjectRootNotFoundException();
         }
 
-        $filePath = str_replace('.', '/', $filename);
-
-        if (! str_ends_with($filePath, '.php')) {
-            $filePath .= '.php';
+        if (str_ends_with($filename, '.php')) {
+            $filename = substr($filename, 0, -4);
         }
+
+        $filePath = $filename . '.php';
 
         $fullPath = $this->rootPath . '/' . $filePath;
 
@@ -131,6 +131,7 @@ final class ConfigLoader
         if ($key === null) {
             $configKey = pathinfo($filePath, PATHINFO_FILENAME);
             $this->config[$configKey] = $config;
+
             return $config;
         }
 
@@ -149,10 +150,12 @@ final class ConfigLoader
 
         if (\array_key_exists($key, $config)) {
             $this->config[$key] = $config[$key];
+
             return $config[$key];
         }
 
         $this->config[$key] = $config;
+
         return $default;
     }
 
