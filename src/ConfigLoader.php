@@ -380,7 +380,7 @@ final class ConfigLoader
     {
         $dir = __DIR__;
         for ($i = 0; $i < 10; $i++) {
-            if (is_dir($dir . '/vendor')) {
+            if (file_exists($dir . '/vendor/autoload.php')) {
                 return $dir;
             }
 
