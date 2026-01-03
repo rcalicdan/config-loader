@@ -114,24 +114,32 @@ final class ConfigLoader
             $filename = substr($filename, 0, -4);
         }
 
-        $filePath = $filename . '.php';
+        $configKey = pathinfo($filename, PATHINFO_FILENAME);
 
-        $fullPath = $this->rootPath . '/' . $filePath;
+        if (! \array_key_exists($configKey, $this->config)) {
+            $filePath = $filename . '.php';
+            $fullPath = $this->rootPath . '/' . $filePath;
 
-        if (! file_exists($fullPath)) {
-            return $default;
+            if (! file_exists($fullPath)) {
+                return $default;
+            }
+
+            $loadedConfig = require $fullPath;
+
+            if (! \is_array($loadedConfig)) {
+                return $default;
+            }
+
+            $this->config[$configKey] = $loadedConfig;
         }
 
-        $config = require $fullPath;
+        $config = $this->config[$configKey];
 
         if (! \is_array($config)) {
             return $default;
         }
 
         if ($key === null) {
-            $configKey = pathinfo($filePath, PATHINFO_FILENAME);
-            $this->config[$configKey] = $config;
-
             return $config;
         }
 
@@ -254,6 +262,72 @@ final class ConfigLoader
                 "Configuration key '{$key}' does not exist and cannot be set."
             );
         }
+    }
+
+    /**
+     * Set a configuration value from a root config file at runtime.
+     *
+     * This method loads a config file from the project root and allows setting
+     * nested values within it using dot notation. It will create the path if it doesn't exist.
+     *
+     * @param string $filename The name of the config file (with or without .php extension)
+     * @param string $key The key to set (supports dot notation)
+     * @param mixed $value The value to set
+     * @param bool $createPath Whether to create the path if it doesn't exist (default: true)
+     * @return bool True if successfully set, false otherwise
+     */
+    public function setFromRoot(string $filename, string $key, $value, bool $createPath = true): bool
+    {
+        if ($this->rootPath === null) {
+            return false;
+        }
+
+        if (str_ends_with($filename, '.php')) {
+            $filename = substr($filename, 0, -4);
+        }
+
+        $configKey = pathinfo($filename, PATHINFO_FILENAME);
+
+        if (! \array_key_exists($configKey, $this->config)) {
+            $this->loadFromRoot($filename);
+        }
+
+        if (! \array_key_exists($configKey, $this->config)) {
+            return false;
+        }
+
+        $fullKey = $configKey . '.' . $key;
+
+        if ($this->has($fullKey)) {
+            return $this->set($fullKey, $value);
+        }
+
+        if (! $createPath) {
+            return false;
+        }
+
+        $segments = explode('.', $key);
+        $current = &$this->config[$configKey];
+
+        foreach ($segments as $index => $segment) {
+            if (! \is_array($current)) {
+                $current = [];
+            }
+
+            if ($index === \count($segments) - 1) {
+                $current[$segment] = $value;
+
+                return true;
+            }
+
+            if (! isset($current[$segment]) || ! \is_array($current[$segment])) {
+                $current[$segment] = [];
+            }
+
+            $current = &$current[$segment];
+        }
+
+        return true;
     }
 
     /**

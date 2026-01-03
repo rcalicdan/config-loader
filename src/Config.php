@@ -69,6 +69,20 @@ final class Config
     }
 
     /**
+     * Set a configuration value from a root config file at runtime.
+     *
+     * @param string $filename The name of the config file (with or without .php extension)
+     * @param string $key The key to set (supports dot notation)
+     * @param mixed $value The value to set
+     * @param bool $createPath Whether to create the path if it doesn't exist (default: true)
+     * @return bool True if successfully set, false otherwise
+     */
+    public static function setFromRoot(string $filename, string $key, $value, bool $createPath = true): bool
+    {
+        return ConfigLoader::getInstance()->setFromRoot($filename, $key, $value, $createPath);
+    }
+
+    /**
      * Check if a configuration key exists.
      *
      * @param string $key

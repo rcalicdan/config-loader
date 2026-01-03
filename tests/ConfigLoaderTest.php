@@ -1209,4 +1209,173 @@ describe('ConfigLoader', function () {
             ;
         });
     });
+
+    describe('setFromRoot() method', function () {
+
+        beforeEach(function () {
+            ConfigLoader::reset();
+
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            $testFiles = glob($rootPath . '/test_*.php');
+            foreach ($testFiles as $file) {
+                if (file_exists($file)) {
+                    unlink($file);
+                }
+            }
+        });
+
+        afterEach(function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            $testFiles = glob($rootPath . '/test_*.php');
+            foreach ($testFiles as $file) {
+                if (file_exists($file)) {
+                    unlink($file);
+                }
+            }
+        });
+
+        it('sets a value in a loaded root config file', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            file_put_contents($rootPath . '/test_settings.php', '<?php return ' . var_export([
+                'theme' => 'light',
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $config->loadFromRoot('test_settings');
+
+            $result = $config->setFromRoot('test_settings', 'theme', 'dark');
+
+            expect($result)->toBeTrue()
+                ->and($config->get('test_settings.theme'))->toBe('dark');
+        });
+
+        it('automatically loads the file if not yet loaded', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            file_put_contents($rootPath . '/test_auto_load.php', '<?php return ' . var_export([
+                'status' => 'pending',
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->setFromRoot('test_auto_load', 'status', 'active');
+
+            expect($result)->toBeTrue()
+                ->and($config->get('test_auto_load.status'))->toBe('active');
+        });
+
+        it('sets a nested value using dot notation', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            file_put_contents($rootPath . '/test_nested_set.php', '<?php return ' . var_export([
+                'app' => [
+                    'debug' => false,
+                ],
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->setFromRoot('test_nested_set', 'app.debug', true);
+
+            expect($result)->toBeTrue()
+                ->and($config->get('test_nested_set.app.debug'))->toBeTrue();
+        });
+
+        it('creates a new nested path if it does not exist', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            file_put_contents($rootPath . '/test_create_path.php', '<?php return [];');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->setFromRoot('test_create_path', 'services.payment.stripe.key', 'sk_test_123');
+
+            expect($result)->toBeTrue()
+                ->and($config->get('test_create_path.services.payment.stripe.key'))->toBe('sk_test_123');
+        });
+
+        it('fails if the file does not exist', function () {
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->setFromRoot('non_existent_file', 'key', 'value');
+
+            expect($result)->toBeFalse();
+        });
+
+        it('converts null values to arrays when creating paths', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            file_put_contents($rootPath . '/test_null_path.php', '<?php return ' . var_export([
+                'bootstrap' => null, 
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->setFromRoot('test_null_path', 'bootstrap.file', '/path/to/file.php');
+
+            expect($result)->toBeTrue()
+                ->and($config->get('test_null_path.bootstrap.file'))->toBe('/path/to/file.php')
+                ->and($config->get('test_null_path.bootstrap'))->toBeArray();
+        });
+
+        it('does not create path if createPath argument is false', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            file_put_contents($rootPath . '/test_strict.php', '<?php return [];');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $result = $config->setFromRoot('test_strict', 'new.key', 'value', false);
+
+            expect($result)->toBeFalse()
+                ->and($config->has('test_strict.new.key'))->toBeFalse();
+        });
+
+        it('overwrites entire arrays', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            file_put_contents($rootPath . '/test_overwrite.php', '<?php return ' . var_export([
+                'items' => ['a', 'b'],
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $newItems = ['x', 'y', 'z'];
+            $result = $config->setFromRoot('test_overwrite', 'items', $newItems);
+
+            expect($result)->toBeTrue()
+                ->and($config->get('test_overwrite.items'))->toBe($newItems)
+                ->and($config->get('test_overwrite.items.0'))->toBe('x');
+        });
+
+        it('persists changes when accessed via loadFromRoot afterwards', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            file_put_contents($rootPath . '/test_persist.php', '<?php return ' . var_export([
+                'foo' => 'bar',
+            ], true) . ';');
+
+            ConfigLoader::reset();
+            $config = ConfigLoader::getInstance();
+
+            $config->setFromRoot('test_persist', 'foo', 'baz');
+            $loaded = $config->loadFromRoot('test_persist');
+
+            expect($loaded['foo'])->toBe('baz');
+        });
+        
+        it('works with Config static facade', function () {
+            $rootPath = ConfigLoader::getInstance()->getRootPath();
+            file_put_contents($rootPath . '/test_facade_set.php', '<?php return ["key" => "old"];');
+
+            ConfigLoader::reset();
+
+            $result = Config::setFromRoot('test_facade_set', 'key', 'new');
+
+            expect($result)->toBeTrue()
+                ->and(Config::get('test_facade_set.key'))->toBe('new');
+        });
+    });
 });
